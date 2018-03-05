@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
 
-  "name": "TradingView Charts",
-  "description": "TradingView Charts for cypto trading sites.",
+  "name": "Chrome Crypto",
+  "description": "Take control of cryptocurrency exchanges.",
   "version": "1.0",
 
   "browser_action": {
@@ -13,23 +13,33 @@
   "permissions": [
     "activeTab",
     "storage",
+    "https://gdax.com/*",
+    "https://binance.com/*",
     "https://bittrex.com/*"
   ],
 
   "background": {
-    "scripts": [ "background.js" ],
+    "scripts": [ "utils.js", "background.js" ],
     "persistent": true
   },
 
   "content_scripts": [{
+
+    "run_at": "document_start",
+
     "matches": [
       "https://*.bittrex.com/Market/Index?MarketName=BTC-*",
       "https://*.bittrex.com/Market/Index?MarketName=ETH-*",
       "https://*.bittrex.com/Market/Index?MarketName=USDT-*",
       "https://*.bittrex.com/"
     ],
-    "js": [ "chart.js", "tradingview.js" ],
-    "css": [ "styles/bittrex.css" ]
+
+    "js": [
+      "crypto.js",
+      "chart.js",
+      "tradingview.js"
+    ]
+
   }]
 
 }

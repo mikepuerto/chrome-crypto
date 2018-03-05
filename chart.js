@@ -1,18 +1,13 @@
 
 /**
- * TradingViewChart Main Script
+ * TradingViewChart
+ * @TODO Use utils to manipulate the DOM
  * @return {void}
  */
 
 (function() {
 
   'use strict';
-
-  const exchanges = {
-    'gdax.com': 'COINBASE',
-    'binance.com': 'BINANCE',
-    'bittrex.com': 'BITTREX'
-  };
 
   const TradingViewChart = {
 
@@ -21,6 +16,7 @@
     settings: {
       ticker: null,
       enabled: null,
+      exchange: null,
       wrapper: null,
       hostname: null,
       container_id: null,
@@ -28,20 +24,22 @@
     },
 
     init() {
-      if (!this.instance) {
-        this.setETHToUsdEstimates(  )
-        this.setExchange();
-        this.setTicker();
-        this.insertChart();
-      }
-    },
-
-    setExchange() {
-      const hostname = this.settings.hostname = document.location.hostname.replace('www.');
-      this.settings.exchange = exchanges[hostname] ? exchanges[hostname] : false;
+      // If an instance exists we have already created a chart
+      // for the page so there is no need to re-create it.
+      this.messageHandler(function() {
+        if (!this.instance) {
+          this.setTicker();
+          document.addEventListener('DOMContentLoaded', function() {
+            this.injectChart();
+          })
+        }
+      });
+      return this;
     },
 
     setTicker() {
+      // works for binance and bittrex, gdax does not
+      // use a query string.
       const search = document.location.search.slice(1);
 
       // not implemented yet
@@ -53,25 +51,27 @@
         const markets = search.split('=')[1].split('-');
         this.settings.market = markets[0].toUpperCase();
         this.settings.symbol = `${this.settings.exchange}:${markets[1].toUpperCase()}${markets[0].toUpperCase()}`;
-      }
-
-      if (this.settings.market === 'ETH') {
-        this.setUsdEstimates();
+        // bittrex does not convert ETH to USD(T)
+        if (this.settings.market === 'ETH') {
+          this.convertETHtoUSD();
+        }
       }
 
     },
 
-    insertChart() {
+    injectChart() {
       this.hideExistingChart();
       this.createChartContainer();
       this.createChart();
     },
 
+    // @TODO Add other exchanges
     hideExistingChart() {
       this.settings.wrapper = document.querySelectorAll('.chart-wrapper')[0];
       this.settings.wrapper.getElementsByTagName('iframe')[0].style.display = 'none';
     },
 
+    // @TODO Make a generic function to create elements
     createChartContainer() {
       const element = document.createElement('div');
       const size = this.getSize();
@@ -81,6 +81,9 @@
       this.settings.wrapper.appendChild(element);
     },
 
+    // @TODO
+    //  - Adjust classes for responsive grids
+    //  - Allow user sizes where it makes sense
     getSize() {
       let size = { autosize: true };
 
@@ -104,68 +107,40 @@
       this.instance = new TradingView.widget(settings);
     },
 
-    setETHToUsdEstimates() {
+    // @TODO
+    //  - Use websockets to listen for incoming prices
+    //  - Inject price conversion element
+    //  - Setup data binding to update element
+    convertETHtoUSD() {
       const nodes = document.querySelector('.market-stats');
-      const last = nodes.findTextNode('Last', node, findTextNode('.base-market'));
+      const last = utils.findTextNode('Last', nodes, findTextNode('.base-market'));
+    }
+
+    /**
+     * Send messages to background
+     * @TODO Needs work
+     * @method messageBackground
+     * @return {void}
+     */
+    messageHandler(callback) {
+      chrome.runtime.sendMessage({ working: true }, function(settings) {
+        if (!settings) {
+          return false;
+        }
+        const keys = Object.keys(settings);
+        const opts = {};
+
+        for (let i = 0, len = keys.length; i++) {
+          opts[utils.convertStorageKey(key[i])] = settings[i];
+        }
+
+        this.settings = Object.assign({}, this.settings, opts);
+
+        callback();
+
+      }.bind(this));
     }
 
   };
-
-  /**
-   * Find text node.
-   * @method findTextNode
-   * @param  {String} text Text to find.
-   * @param  {HTMLNode} parentNode Node to traverse.
-   * @param  {String} elementType Type of element to find.
-   * @return {String} Found text.
-   */
-  function findTextNode(text, parentNode, selector) {
-    const tags = parentNode.querySelector(selector);
-    const searchText = text;
-    let result;
-    // loop found elements
-    for (let i = 0, len = tags.length; i < len; i++) {
-      if (tags[i].textContent == searchText) {
-        result = tags[i];
-        break;
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Send messages to background
-   * @method messageBackground
-   * @return {void}
-   */
-  function messageBackground() {
-    chrome.runtime.sendMessage({ working: true }, function(settings) {
-      if (settings && settings.chartSettings) {
-        this.settings.chartSettings = settings.chartSettings;
-        this.init();
-      }
-    }.bind(this));
-  }
-
-  /**
-   * Listen for document ready.
-   *  - If ready remove document.onreadystatechange.
-   *  - If not set document.onreadystatechange to callback.
-   * @method ready
-   * @param  {Function} callback function to be called on ready
-   * @return {void}
-   */
-  function ready(callback) {
-    if (document.readyState === 'complete') {
-      document.onreadystatechange = null;
-      return callback();
-    }
-    document.onreadystatechange = callback.bind(this);
-  }
-
-  // kick off
-  ready(function() {
-    messageBackground(this);
-  });
 
 })();
