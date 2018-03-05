@@ -1,0 +1,35 @@
+{
+  "manifest_version": 2,
+
+  "name": "TradingView Charts",
+  "description": "TradingView Charts for cypto trading sites.",
+  "version": "1.0",
+
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_popup": "settings.html"
+  },
+
+  "permissions": [
+    "activeTab",
+    "storage",
+    "https://bittrex.com/*"
+  ],
+
+  "background": {
+    "scripts": [ "background.js" ],
+    "persistent": true
+  },
+
+  "content_scripts": [{
+    "matches": [
+      "https://*.bittrex.com/Market/Index?MarketName=BTC-*",
+      "https://*.bittrex.com/Market/Index?MarketName=ETH-*",
+      "https://*.bittrex.com/Market/Index?MarketName=USDT-*",
+      "https://*.bittrex.com/"
+    ],
+    "js": [ "chart.js", "tradingview.js" ],
+    "css": [ "styles/bittrex.css" ]
+  }]
+
+}
